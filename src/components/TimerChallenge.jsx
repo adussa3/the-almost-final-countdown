@@ -1,5 +1,7 @@
 import { useRef, useState } from "react";
 
+import ResultModal from "./ResultModal";
+
 export default function TimerChallenge({ title, targetTime }) {
     /*
         This fixes the issued explained in TimerChallenge_Without_useRef.jsx
@@ -11,6 +13,32 @@ export default function TimerChallenge({ title, targetTime }) {
         - unlike state, the component does NOT re-render when ref is defined
     */
     const timer = useRef();
+
+    /* 
+        NOTE: using forwardRef has one small potential flaw, the problem is that the TimerChallenge Component (which uses the ResultModal
+              component) in the end, needs to know that the dialog useRef will be attached to the <dialog> element in the ResultModal.
+
+              In this tiny demo application where we are the only develop working on it, this isn't a problem because we wrote this code and
+              we know what it does!
+
+              But let's imagine that this is a large codebase with multiple developers where us and the developers write multiple components.
+              We will be working with other components that other developers wrote and vice versa. If we always have to dive into those
+              components to understand how they work internally so that we use them correctly, and we call the dialog.current.showModal()
+              method, that can be a problem!
+
+              This is because another developer could change the ResultModal from a <dialog> to a <div> element making it so that .showModal()
+              will not work anymore!
+
+              Instead, we use the useImperativeHandle Hook in the ResultModal component to expose it's own function to be called by
+              the TimerChallenge component to open the modal
+
+              This will work independently of how the JSX code in the ResultModal might change in the future. So that the person working
+              on the ResultModal component can change it however they like AS LONG AS they keep one function that is exposed to the
+              TimerChallenge component which it calls to open the modal instead of dialog.current.showModal() on the internal <dialog>
+              element
+    */
+    // We're using this ref to PROGRAMMATICALLY open the dialog
+    const dialog = useRef();
 
     const [didTimerStart, setDidTimerStart] = useState(false);
     const [isTimerExpired, setIsTimerExpired] = useState(false);
@@ -25,6 +53,11 @@ export default function TimerChallenge({ title, targetTime }) {
             // After the delay, we set isTimerExpired to true
             setDidTimerStart(false);
             setIsTimerExpired(true);
+
+            // The TimerChallenge component dialog component is no longer attached to the <dialog> element in the ResultModal component
+            // Instead, it refers to the object defined inside of the useImperativeHandle hook!
+            // It calls the "open()" method in the object defined inside of the useImperativeHande hook
+            dialog.current.open();
         }, targetTime * 1000);
 
         // We set didTimerStart to true when this function is executed
@@ -43,16 +76,18 @@ export default function TimerChallenge({ title, targetTime }) {
     };
 
     return (
-        <section className="challenge">
-            <h2>{title}</h2>
-            {isTimerExpired && <p>You lost</p>}
-            <p className="challenge-time">
-                {targetTime} second{targetTime > 1 ? "s" : ""}
-            </p>
-            <p>
-                <button onClick={didTimerStart ? handleStop : handleStart}>{didTimerStart ? "Stop" : "Start"} Challenge</button>
-            </p>
-            <p className={didTimerStart ? "active" : ""}>{didTimerStart ? "Time is running..." : "Timer inactive"}</p>
-        </section>
+        <>
+            <ResultModal ref={dialog} targetTime={targetTime} result="lost" />
+            <section className="challenge">
+                <h2>{title}</h2>
+                <p className="challenge-time">
+                    {targetTime} second{targetTime > 1 ? "s" : ""}
+                </p>
+                <p>
+                    <button onClick={didTimerStart ? handleStop : handleStart}>{didTimerStart ? "Stop" : "Start"} Challenge</button>
+                </p>
+                <p className={didTimerStart ? "active" : ""}>{didTimerStart ? "Time is running..." : "Timer inactive"}</p>
+            </section>
+        </>
     );
 }
