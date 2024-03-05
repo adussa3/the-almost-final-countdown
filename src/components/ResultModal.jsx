@@ -1,4 +1,5 @@
 import { forwardRef, useImperativeHandle, useRef } from "react";
+import { createPortal } from "react-dom";
 
 /*
     NOTE: You CANNOT pass a ref to a Custom Component as a property!
@@ -55,24 +56,40 @@ const ResultModal = forwardRef(function ResultModal({ targetTime, remainingTime,
             We're using the dialog ref defined in the ResultModal component! NOT the dialog ref in the TimerChallenge component!
             We detach the TimerChallenge component from the <dialog> element component in ResultModal component
         */
-        <dialog ref={dialog} className="result-modal" onClose={onReset}>
-            {didUserLose && <h2>You lost!</h2>}
-            {!didUserLose && <h2>Your score: {score}!</h2>}
-            <p>
-                The target time was <strong>{targetTime} seconds.</strong>
-            </p>
-            <p>
-                You stopped the timer with <strong>{formattedRemainingTime} seconds left.</strong>
-            </p>
-            {/*
-                When a form's method is dialog, the state of the form is saved but not submitted, and the dialog gets closed.
-                A button that "submits" the form will CLOSE the dialog!
-            */}
-            <form method="dialog" onSubmit={onReset}>
-                {/* This button CLOSES the dialog */}
-                <button>CLOSE</button>
-            </form>
-        </dialog>
+
+        /*
+        Note: 
+            - The "React" Library only exposes functions and features that work in all kinds of environment (like React Native)
+            - The "React DOM" Library includes a couple of features and functions that in the end allow React to interact with the DOM
+                (so with a website rendered in the browser)
+
+            One function exposed by the React DOM is the "createPortal" function which creates a portal that teleports HTML code to a
+            different place in the DOM
+
+            To achive this, we wrap the JSX code with createPortal as the first argument. And then, createPortal takes in a second
+            argument is an HTML element that the code should teleport to (where it should be rendered in the end)
+        */
+        createPortal(
+            <dialog ref={dialog} className="result-modal" onClose={onReset}>
+                {didUserLose && <h2>You lost!</h2>}
+                {!didUserLose && <h2>Your score: {score}!</h2>}
+                <p>
+                    The target time was <strong>{targetTime} seconds.</strong>
+                </p>
+                <p>
+                    You stopped the timer with <strong>{formattedRemainingTime} seconds left.</strong>
+                </p>
+                {/*
+                    When a form's method is dialog, the state of the form is saved but not submitted, and the dialog gets closed.
+                    A button that "submits" the form will CLOSE the dialog!
+                */}
+                <form method="dialog" onSubmit={onReset}>
+                    {/* This button CLOSES the dialog */}
+                    <button>CLOSE</button>
+                </form>
+            </dialog>,
+            document.getElementById("modal") // we select the div with the "modal" Id (inside the index.html file)
+        )
     );
 });
 

@@ -83,6 +83,24 @@ export default function TimerChallenge({ title, targetTime }) {
     };
 
     return (
+        /*
+            When you open the Developer Tools and look at the code in the "Elements" tab, you see the ResultModal component's dialog element
+            is nested inside the "challenge" section
+
+            Visually, there's nothing wrong with this, but technically, it would make more sense if the overlay element (which visually sits
+            on top of the entire page) is located DIRECTLY inside the body, or maybe inside a div with an id of "modal"
+
+            It makes sense to have a dialog on a higher level because that would map it's visual appearence because that would map it's visual
+            appearence to its location in the HTML structure
+
+            This can be better for accessibility reasons and can help you avoid styling problems and conflicts (especially for deeply nested
+            elements)
+
+            We want output the ResultModal component in the TimerChallenge component, but we want to move its JSX code to go somewhere else
+            in our the page
+
+            We can do this using Portals from the React DOM Library!
+        */
         <>
             <ResultModal ref={dialog} targetTime={targetTime} remainingTime={timeRemaining} onReset={handleReset} />
             <section className="challenge">
