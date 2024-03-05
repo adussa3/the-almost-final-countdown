@@ -41,59 +41,64 @@ export default function TimerChallenge({ title, targetTime }) {
     const dialog = useRef();
 
     // States
-    const [timeRemaining, setTimeRemaining] = useState(targetTime * 1000);
-
-    const isTimerActive = timeRemaining > 0 && timeRemaining < targetTime * 1000;
-
-    // We manually stop the timer if it expired/time runs out! Not just when the stop button is pressed
-    if (timeRemaining <= 0) {
-        clearInterval(timer.current);
-        dialog.current.open();
-    }
-
-    const handleReset = () => {
-        setTimeRemaining(targetTime * 1000);
-    };
+    const [didTimerStart, setDidTimerStart] = useState(false);
+    const [isTimerExpired, setIsTimerExpired] = useState(false);
 
     const handleStart = () => {
         /*
+            setTimeout() is used to set a timer in JavaScript
+            It takes in a callback function and a delay, it executes the function after the timer expires
+
             RECALL: we need to use timer.current, we always must target this "current" property and set it equal to the timer
-            the "current" property will store this pointer at this "timer" returned by setTimeout/setInterval
+                    the "current" property will store this pointer at this "timer" returned by setTimeout/setInterval
+        */
+        timer.current = setTimeout(() => {
+            // After the delay, we set isTimerExpired to true
+            setDidTimerStart(false);
+            setIsTimerExpired(true);
 
+            // The TimerChallenge component dialog component is no longer attached to the <dialog> element in the ResultModal component
+            // Instead, it refers to the object defined inside of the useImperativeHandle hook!
+            // It calls the "open()" method in the object defined inside of the useImperativeHande hook
+            dialog.current.open();
+        }, targetTime * 1000);
+
+        /*
             NOTE: setTimeout doesn't let us know how much time is left when the timer is stopped, so we need to use setInterval!
-            setInterval will execute the callback function everytime the time expires, while setTimout only execute the function
-            once after the time expires
+            setInterval will execute the function everytime the time expires (setTimout only execute the function once after the time expires)
 
-            We don't want to set the targetTime as a time, but a very short duration so that we can keep track of how much time expired!
+            We don't want to set the targetTime as a time, but a very sort duration so that we can keep track of how much time expired!
             Therefore, we execute this function every 10 milliseconds
         */
-        const millisecondsElapsed = 10;
-        timer.current = setInterval(() => {
-            setTimeRemaining((prevTimeRemaining) => prevTimeRemaining - millisecondsElapsed);
-        }, millisecondsElapsed);
+        timer.current = setInterval(() => {}, 10);
+
+        // We set didTimerStart to true when this function is executed
+        setDidTimerStart(true);
     };
 
     const handleStop = () => {
-        // JavaScript's clearInterval() function is used to stop a timer,
+        // JavaScript's clearTimeout() function is used to stop a timer,
         // but it needs a pointer (the id) to that timer
         //
         // Because we're using useRef, we clear the timer using timer.current
-        clearInterval(timer.current);
-        dialog.current.open();
+        clearTimeout(timer.current);
+
+        setDidTimerStart(false);
+        setIsTimerExpired(false);
     };
 
     return (
         <>
-            <ResultModal ref={dialog} targetTime={targetTime} remainingTime={timeRemaining} onReset={handleReset} />
+            <ResultModal ref={dialog} targetTime={targetTime} result="lost" />
             <section className="challenge">
                 <h2>{title}</h2>
                 <p className="challenge-time">
                     {targetTime} second{targetTime > 1 ? "s" : ""}
                 </p>
                 <p>
-                    <button onClick={isTimerActive ? handleStop : handleStart}>{isTimerActive ? "Stop" : "Start"} Challenge</button>
+                    <button onClick={didTimerStart ? handleStop : handleStart}>{didTimerStart ? "Stop" : "Start"} Challenge</button>
                 </p>
-                <p className={isTimerActive ? "active" : ""}>{isTimerActive ? "Time is running..." : "Timer inactive"}</p>
+                <p className={didTimerStart ? "active" : ""}>{didTimerStart ? "Time is running..." : "Timer inactive"}</p>
             </section>
         </>
     );

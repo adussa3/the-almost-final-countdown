@@ -12,9 +12,13 @@ import { forwardRef, useImperativeHandle, useRef } from "react";
     NOTE: Even if you're not passing in any attributes, you still need to pass in something in the first parameter!
           Otherwise, it doesn't work! ref needs to be the second parameter
 */
-const ResultModal = forwardRef(function ResultModal({ result, targetTime }, ref) {
+const ResultModal = forwardRef(function ResultModal({ targetTime, remainingTime, onReset }, ref) {
     // This useRef will bind to the <dialog> element!
     const dialog = useRef();
+
+    const didUserLose = remainingTime <= 0;
+    const formattedRemainingTime = (remainingTime / 1000).toFixed(2);
+    const score = Math.round((1 - remainingTime / (targetTime * 1000)) * 100);
 
     /*
         The useImperativeHandle hook is used to define properties and methods that should be accessible on this component
@@ -30,8 +34,8 @@ const ResultModal = forwardRef(function ResultModal({ result, targetTime }, ref)
     */
     useImperativeHandle(ref, () => {
         return {
-            // NOTE: this is a shorthand way of writing open: () => ({})
-            // When th open method is called, it opens the dialog modal
+            // NOTE: this is a shorthand way of writing open: () => dialog.current.showModal();
+            // When the open method is called, it opens the dialog modal
             open() {
                 dialog.current.showModal();
             },
@@ -49,21 +53,22 @@ const ResultModal = forwardRef(function ResultModal({ result, targetTime }, ref)
 
         /*
             We're using the dialog ref defined in the ResultModal component! NOT the dialog ref in the TimerChallenge component!
-
+            We detach the TimerChallenge component from the <dialog> element component in ResultModal component
         */
-        <dialog ref={dialog} className="result-modal">
-            <h2>You {result}!</h2>
+        <dialog ref={dialog} className="result-modal" onClose={onReset}>
+            {didUserLose && <h2>You lost!</h2>}
+            {!didUserLose && <h2>Your score: {score}!</h2>}
             <p>
                 The target time was <strong>{targetTime} seconds.</strong>
             </p>
             <p>
-                You stopped the timer with <strong>X seconds left.</strong>
+                You stopped the timer with <strong>{formattedRemainingTime} seconds left.</strong>
             </p>
             {/*
                 When a form's method is dialog, the state of the form is saved but not submitted, and the dialog gets closed.
                 A button that "submits" the form will CLOSE the dialog!
             */}
-            <form method="dialog">
+            <form method="dialog" onSubmit={onReset}>
                 {/* This button CLOSES the dialog */}
                 <button>CLOSE</button>
             </form>
