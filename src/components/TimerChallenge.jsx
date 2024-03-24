@@ -9,8 +9,8 @@ export default function TimerChallenge({ title, targetTime }) {
         (1) useRef will retain it's value when the component is re-rendered
         (2) Every component instance will have it's own dedicated timer useRef!
 
-        - similar state, React stores these refs behind the scenes
-        - unlike state, the component does NOT re-render when ref is defined
+        - similar to state, React stores these refs behind the scenes
+        - but unlike state, the component does NOT re-render when ref is defined
     */
     const timer = useRef();
 
